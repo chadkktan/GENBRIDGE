@@ -1,0 +1,93 @@
+<section class="left">
+    <div class="form-card">
+        <div class="logo-wrap">
+            <img
+                class="logo"
+                src="{{ url_for('static', filename='pictures/logo.png') }}"
+                alt="Genbridge logo"
+            />
+        </div>
+
+        <h1 class="title">Create your account</h1>
+        <p class="subtitle">Start building meaningful connections across generations</p>
+
+        <form id="createAccountForm" action="{{ url_for('create_account') }}" method="POST" novalidate>
+            <div class="field">
+                <label for="fullName">Full Name</label>
+                <input
+                    id="fullName"
+                    name="full_name"
+                    type="text"
+                    placeholder="John Doe"
+                    required
+                />
+            </div>
+
+            <div class="field">
+                <label for="email">Email Address</label>
+                <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    required
+                />
+
+                {% if ns.email_exists %}
+                    <div class="inline-error">Email already has an account</div>
+                {% endif %}
+            </div>
+
+            <div class="field">
+                <label for="password">Password</label>
+                <div class="pw-wrap">
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="••••••••"
+                        required
+                    />
+                    <!-- onclick calls a global JS function in create_account.js -->
+                    <button class="eye-btn" type="button" onclick="togglePassword('password')" aria-label="Show/Hide password">
+                        👁
+                    </button>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="confirmPassword">Confirm Password</label>
+                <div class="pw-wrap">
+                    <input
+                        id="confirmPassword"
+                        name="confirm_password"
+                        type="password"
+                        placeholder="••••••••"
+                        required
+                    />
+                    <button class="eye-btn" type="button" onclick="togglePassword('confirmPassword')" aria-label="Show/Hide confirm password">
+                        👁
+                    </button>
+                </div>
+            </div>
+
+            <div class="terms">
+                <input id="terms" name="terms" type="checkbox" required />
+                <div>
+                    I agree to the
+                    <a href="#" onclick="return false;">Terms of Service</a>
+                    and
+                    <a href="#" onclick="return false;">Privacy Policy</a>
+                </div>
+            </div>
+
+            <button class="btn-primary" type="submit">Create Account</button>
+
+            <!-- opens the modal via JS (openSignInModal) -->
+            <div class="signin">
+                Already have an account?
+                <a href="#" onclick="openSignInModal(); return false;">Sign in</a>
+            </div>
+        </form>
+    </div>
+</section>
