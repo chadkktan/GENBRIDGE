@@ -1,0 +1,74 @@
+<div class="card">
+    <h2>Security Settings</h2>
+
+    <div class="settings-row">
+        <div class="settings-left">
+            <div class="settings-icon">🔒</div>
+            <div class="settings-text">
+                <strong>Password</strong>
+                <span>Last changed 3 months ago</span>
+            </div>
+        </div>
+
+        <button class="btn btn-black" type="button" onclick="openChangePassword()">
+            Change Password
+        </button>
+    </div>
+
+    <div class="settings-row">
+        <div class="settings-left">
+            <div class="settings-icon">🛡️</div>
+            <div class="settings-text">
+                <strong>Two-Factor Authentication</strong>
+                <span id="twofaStatus">Enabled via authenticator app</span>
+            </div>
+        </div>
+
+        <button class="btn btn-outline" id="twofaBtn" type="button" onclick="toggle2FA()">
+            Disable
+        </button>
+    </div>
+
+    <div class="settings-row" style="flex-direction: column; align-items: stretch;">
+        <div class="settings-left">
+            <div class="settings-icon">🔑</div>
+            <div class="settings-text">
+                <strong>Active Sessions</strong>
+                <span>Manage your active sessions and devices</span>
+            </div>
+        </div>
+
+        <div class="sessions-wrapper" id="sessionsWrap">
+            {% if active_sessions and active_sessions|length > 0 %}
+                {% for s in active_sessions %}
+                    <div class="session-card" data-sid="{{ s.id }}">
+                        <div class="session-info">
+                            <strong>{{ s.device }}</strong>
+                            <span>
+                                {{ s.location }} ·
+                                {% if s.is_current %}
+                                    Current session
+                                {% else %}
+                                    Last active {{ s.last_seen_human }}
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        {% if s.is_current %}
+                            <div class="session-active">Active</div>
+                        {% else %}
+                            <div class="session-revoke" onclick="revokeSession('{{ s.id }}')">Revoke</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="session-card">
+                    <div class="session-info">
+                        <strong>No active sessions found</strong>
+                        <span>Open your profile from another device to see it here.</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
