@@ -25,16 +25,27 @@
 
             <div class="genbridge-booking-actions">
   <!-- Edit icon -->
-  <a class="icon-btn" href="{{ url_for('edit_booking', booking_id=b.booking_id) }}" title="Edit">
-    ✏️
-  </a>
+  <a href="{{ url_for('edit_booking', booking_id=b.booking_id) }}"
+   onclick="return confirm('Edit this booking?');">
+  ✏️
+</a>
+
+    
+  
 
   <!-- Delete icon -->
-  <form method="post" action="{{ url_for('delete_booking_route', booking_id=b.booking_id) }}" style="display:inline;">
-    <button type="submit" class="icon-btn danger" title="Delete">
-      🗑️
-    </button>
-  </form>
+  <form method="post"
+      action="{{ url_for('delete_booking_route', booking_id=b.booking_id) }}"
+      onsubmit="return confirm('Delete this booking?');"
+      style="display:inline;">
+  <button type="submit"
+          class="genbridge-icon-btn danger"
+          style="border:none; background:transparent; padding:0;">
+    🗑️
+  </button>
+</form>
+
+    
 </div>
 
               </div>
@@ -42,10 +53,13 @@
             </div>
           {% endfor %}
         </div>
+<form method="post"
+      action="{{ url_for('clear_bookings') }}"
+      class="mt-4"
+      onsubmit="return confirm('Clear ALL bookings? This cannot be undone.');">
+  <button type="submit" class="btn btn-outline-danger">Clear All</button>
+</form>
 
-        <form method="post" action="{{ url_for('clear_bookings') }}" class="mt-4">
-          <button type="submit" class="btn btn-outline-danger">Clear All</button>
-        </form>
 
       </div>
     </div>
