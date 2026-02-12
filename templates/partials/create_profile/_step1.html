@@ -1,0 +1,102 @@
+<section id="step1">
+    <h1>Tell us about yourself</h1>
+    <p class="subtitle">Let’s start with some basic information to create your profile</p>
+
+    <div class="avatar-wrap">
+        <img
+            class="avatar-img"
+            id="avatarPreview"
+            alt="avatar"
+            src="{% if profile.avatar_filename %}
+                    {{ url_for('static', filename='uploads/' + profile.avatar_filename) }}
+                    {% else %}
+                    https://www.gravatar.com/avatar/?d=mp&s=200
+                    {% endif %}"
+        />
+
+        <label class="avatar-upload" for="avatar" title="Upload photo">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path d="M3 7h4l2-2h6l2 2h4v12H3V7z"
+                      fill="none" stroke="white" stroke-width="2" />
+                <circle cx="12" cy="13" r="3.2"
+                        fill="none" stroke="white" stroke-width="2" />
+            </svg>
+        </label>
+
+        <input type="file" id="avatar" name="avatar" accept="image/*" />
+    </div>
+
+    <div class="grid">
+        <div>
+            <label>First Name<span class="req">*</span></label>
+            <input id="first_name" name="first_name" value="{{ profile.first_name|default('') }}" />
+            <div class="error" id="err_first_name">Please enter your first name.</div>
+        </div>
+
+        <div>
+            <label>Last Name<span class="req">*</span></label>
+            <input id="last_name" name="last_name" value="{{ profile.last_name|default('') }}" />
+            <div class="error" id="err_last_name">Please enter your last name.</div>
+        </div>
+
+        <div>
+            <label>Email Address<span class="req">*</span></label>
+            <input
+                id="email"
+                name="email"
+                value="{{ profile.email|default('') }}"
+                placeholder="you@example.com"
+                {% if profile.email %}readonly style="background:#f2f2f2; cursor:not-allowed;"{% endif %}
+            />
+            <div class="error" id="err_email">Please enter a valid email address</div>
+        </div>
+
+        <div>
+            <label>Phone Number<span class="req">*</span></label>
+            <input
+                id="phone"
+                name="phone"
+                value="{{ profile.phone|default('') }}"
+                placeholder="+65 9123 4567"
+            />
+            <div class="error" id="err_phone">Please enter a valid phone number.</div>
+        </div>
+
+        <div>
+            <label>Date of Birth<span class="req">*</span></label>
+            <input
+            id="dob"
+            name="dob"
+            type="date"
+            value="{{ profile.dob|default('') }}"
+            max="{{ max_dob }}"
+            data-min-age="16"
+            title="You need to be older than 16"
+            />
+            <div class="error" id="err_dob">Please enter your date of birth.</div>
+        </div>
+
+        <div>
+            <label>Location<span class="req">*</span></label>
+            <input
+                id="location"
+                name="location"
+                value="{{ profile.location|default('') }}"
+                placeholder="Singapore, East"
+            />
+            <div class="error" id="err_location">Please enter your location.</div>
+        </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="actions">
+        <button class="btn btn-back" type="button" disabled style="opacity: 0.6; cursor: not-allowed;">
+            Back
+        </button>
+
+        <button class="btn btn-next" type="button" onclick="nextStep()">
+            Next →
+        </button>
+    </div>
+</section>
