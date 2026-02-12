@@ -1,76 +1,63 @@
-"""
-A tiny JSON "database" wrapper:
-- Load and save users.json / profiles.json safely
-- Expose an in-memory db object (db.users / db.profiles)
+import sqlite3
 
-Keeps file I/O in one place so routes stay clean.
-"""
+DATABASE = "communities.db"
 
-import json
-import os
-from dataclasses import dataclass, field
-from typing import Any
+def connect_db():
+   
+    conn = sqlite3.connect(DATABASE, timeout=10, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
 
-from config import USERS_FILE, PROFILES_FILE
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA busy_timeout=10000;")  
+    return conn
 
+def init_db():
+    with connect_db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS communities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL,
+                description TEXT NOT NULL,
+                members INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-def _load_json(path: str) -> dict:
-    """
-    Load JSON file into dict safely.
-    Returns {} if file doesn't exist or is invalid.
-    """
-    if not os.path.exists(path):
-        return {}
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f) or {}
-    except Exception:
-        return {}
+def get_all_communities():
+    with connect_db() as conn:
+        return conn.execute(
+            "SELECT * FROM communities ORDER BY created_at DESC"
+        ).fetchall()
 
+def get_community_by_id(community_id):
+    with connect_db() as conn:
+        return conn.execute(
+            "SELECT * FROM communities WHERE id = ?",
+            (community_id,)
+        ).fetchone()
 
-def _save_json(path: str, data: dict) -> None:
-    """
-    Save JSON safely using a temp file then atomic replace.
-    Prevents corrupted files if write is interrupted.
-    """
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    os.replace(tmp, path)
+def create_community(name, category, description):
+    with connect_db() as conn:
+        conn.execute(
+            """INSERT INTO communities (name, category, description)
+               VALUES (?, ?, ?)""",
+            (name, category, description)
+        )
 
+def update_community(community_id, name, category, description):
+    with connect_db() as conn:
+        conn.execute(
+            """UPDATE communities
+               SET name = ?, category = ?, description = ?
+               WHERE id = ?""",
+            (name, category, description, community_id)
+        )
 
-@dataclass
-class JsonDB:
-    """
-    In-memory store backed by JSON files.
-
-    users:
-      email -> {full_name, pw_hash, created_at}
-
-    profiles:
-      email -> {first_name, last_name, ...}
-    """
-
-    users_file: str = USERS_FILE
-    profiles_file: str = PROFILES_FILE
-
-    users: dict[str, dict[str, Any]] = field(default_factory=dict)
-    profiles: dict[str, dict[str, Any]] = field(default_factory=dict)
-
-    def load(self) -> None:
-        """Load both JSON files into memory."""
-        self.users = _load_json(self.users_file)
-        self.profiles = _load_json(self.profiles_file)
-
-    def save_users(self) -> None:
-        """Persist users dict to users.json."""
-        _save_json(self.users_file, self.users)
-
-    def save_profiles(self) -> None:
-        """Persist profiles dict to profiles.json."""
-        _save_json(self.profiles_file, self.profiles)
-
-
-# Global shared DB object used across routes
-db = JsonDB()
-db.load()
+def delete_community(community_id):
+    with connect_db() as conn:
+        conn.execute(
+            "DELETE FROM communities WHERE id = ?",
+            (community_id,)
+        )

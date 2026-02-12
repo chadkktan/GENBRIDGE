@@ -1,38 +1,75 @@
-"""
-Main entry point:
-- Create Flask app
-- Apply config
-- Ensure folders exist
-- Register route modules
-- Run server
-"""
+from flask import Flask, render_template, request, redirect, url_for, flash
+from database import (
+    init_db, get_all_communities, get_community_by_id,
+    create_community, update_community, delete_community
+)
+from datetime import datetime
 
-from flask import Flask
-
-from config import SECRET_KEY, ensure_dirs
-from database import db
-from routes_auth import register_auth_routes
-from routes_profile import register_profile_routes
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'GenBridge'
 
 
-def create_app() -> Flask:
-    ensure_dirs()
 
-    app = Flask(__name__)
-    app.secret_key = SECRET_KEY
+# ✅ Single source of truth for categories
+CATEGORIES = {
+    "exercise": "🚴 Exercise",
+    "cooking": "🍳 Cooking",
+    "arts_crafts": "🎨 Arts & Crafts",
+    "music": "🎶 Music",
+    "reading": "📖 Reading",
+    "technology": "📱 Technology",
+    "wellness": "🏡 Wellness",
+}
 
-    # Attach routes from separate route files
-    register_auth_routes(app, db)
-    register_profile_routes(app, db)
+# Initialize database
+init_db()
 
-    return app
-
-app = create_app()
-
-# To be integrated with homepage
-@app.route("/home")
+@app.route('/')
 def home():
-    return "<h1>Home page coming soon</h1>"
+    communities = get_all_communities()
+   
+    return render_template('landing.html', communities=communities, categories=CATEGORIES)
 
-if __name__ == "__main__":
+@app.route('/create', methods=['GET', 'POST'])
+def create():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        category = request.form.get('category', '').strip()   # stores emoji label
+        description = request.form.get('description', '').strip()
+
+        create_community(name, category, description)
+        flash('Community created successfully!', 'success')
+        return redirect(url_for('home'))
+
+    return render_template('create.html', categories=CATEGORIES)
+
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+def edit(id):
+    community = get_community_by_id(id)
+    if not community:
+        flash('Community not found!', 'danger')
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        category = request.form.get('category', '').strip()   # stores emoji label
+        description = request.form.get('description', '').strip()
+
+        update_community(id, name, category, description)
+        flash('Community updated successfully!', 'success')
+        return redirect(url_for('home'))
+
+    return render_template('edit.html', community=community, categories=CATEGORIES)
+
+@app.route('/delete/<int:id>', methods=['POST'])
+def delete(id):
+    delete_community(id)
+    flash('Community deleted successfully!', 'info')
+    return redirect(url_for('home'))
+
+@app.context_processor
+def inject_datetime():
+    return dict(datetime=datetime)
+
+if __name__ == '__main__':
     app.run(debug=True)

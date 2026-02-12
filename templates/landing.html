@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block title %}Communities - GenBridge{% endblock %}
+
+{% block content %}
+{% set icons = {
+  'Exercise': '🚴',
+  'Cooking': '🍳',
+  'Arts & Crafts': '🎨',
+  'Music': '🎶',
+  'Reading': '📖',
+  'Technology': '📱',
+  'Wellness': '🏡'
+} %}
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="community-bg text-center">
+      <div class="community-word justify-content-center">
+        <div class="letter-box c1">C</div>
+        <div class="letter-box c2">O</div>
+        <div class="letter-box c3">M</div>
+        <div class="letter-box c4">M</div>
+        <div class="letter-box c5">U</div>
+        <div class="letter-box c6">N</div>
+        <div class="letter-box c7">I</div>
+        <div class="letter-box c8">T</div>
+        <div class="letter-box c9">Y</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Top controls -->
+<div class="container d-flex align-items-center justify-content-center gap-5 mb-5">
+  <!-- Filter Tabs -->
+  <ul class="nav nav-pills mb-0">
+    <li class="nav-item">
+      <a class="nav-link active" href="#" id="newTab">
+        <span class="badge bg-primary rounded-circle me-2">●</span> New
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link text-muted" href="#" id="topTab">
+        ▲ Top
+      </a>
+    </li>
+  </ul>
+
+  <!-- Search bar -->
+  <form class="d-flex w-50" onsubmit="return false;">
+    <input id="searchInput" class="form-control" type="search" placeholder="Search">
+  </form>
+
+  <!-- Create button -->
+  <a href="{{ url_for('create') }}" class="btn btn-danger btn-lg px-2">
+    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" fill="currentColor"
+         class="bi bi-plus-lg" viewBox="0 0 16 16">
+      <path fill-rule="evenodd"
+            d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/>
+    </svg>
+    Create Community
+  </a>
+</div>
+
+<!-- Communities Grid -->
+<div class="container">
+  {% if communities %}
+    <div class="row g-4">
+      {% for community in communities %}
+        <div class="col-md-6">
+          <div class="card shadow-sm h-100 community-card">
+            <div class="card-body">
+
+              <!-- Member Count -->
+              <div class="d-flex align-items-center mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                     fill="currentColor" class="bi bi-people-fill me-2" viewBox="0 0 16 16">
+                  <path
+                    d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6
+                       3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355
+                       .68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1
+                       1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5
+                       2.5 2.5 0 0 0 0 5"/>
+                </svg>
+                <span class="fw-semibold">{{ community['members'] }} Members</span>
+              </div>
+
+              <!-- Avatar -->
+              <div class="d-flex align-items-center mb-3">
+                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2"
+                     style="width: 40px; height: 40px;">
+                  <span class="text-white fw-bold">
+                    {{ (community['name'] or '?')[0] }}
+                  </span>
+                </div>
+                <div>
+                  <div class="fw-semibold small">Admin</div>
+                  <div class="text-muted small">Youth</div>
+                </div>
+              </div>
+
+              <!-- Name -->
+              <h5 class="card-title fw-bold mb-3">{{ community['name'] }}</h5>
+
+              <!-- Description -->
+              <p class="card-text text-muted mb-3">{{ community['description'] }}</p>
+
+              <!-- Category -->
+              <div class="small text-muted mb-3">
+              <strong>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                    class="bi bi-tag" viewBox="0 0 16 16">
+                  <path d="M6 4.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m-1 0a.5.5 0 1 0-1 0 .5.5 0 0 0 1 0"/>
+                  <path d="M2 1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586
+                          a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 1 6.586V2a1 1 0 0 1 1-1m0 5.586
+                          7 7L13.586 9l-7-7H2z"/>
+                  </svg> Category:
+              </strong>
+              {{ community['category'] }}
+            </div>
+              <!-- Actions -->
+              <div class="d-flex gap-2">
+                <a href="{{ url_for('edit', id=community['id']) }}"
+                   class="btn btn-outline-secondary w-50">
+                  Edit
+                </a>
+
+                <form action="{{ url_for('delete', id=community['id']) }}"
+                      method="post"
+                      class="w-50"
+                      onsubmit="return confirm('Delete this community?');">
+                  <button type="submit" class="btn btn-outline-danger w-100">
+                    Delete
+                  </button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center py-5">
+      <h3 class="text-muted mb-3">No communities yet</h3>
+      <p class="fs-5">Be the first to create one!</p>
+      <a href="{{ url_for('create') }}" class="btn btn-danger btn-lg mt-3 px-5">
+        Create First Community
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .community-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e0e0e0;
+  }
+
+  .community-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  }
+
+  .nav-pills .nav-link.active {
+    background-color: #e7f3ff;
+    color: #0066cc;
+  }
+
+  .nav-pills .nav-link {
+    color: #666;
+    font-weight: 500;
+  }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const search = document.getElementById('searchInput');
+  if (!search) return;
+  search.addEventListener('input', e => {
+    const term = e.target.value.toLowerCase();
+    document.querySelectorAll('.community-card').forEach(card => {
+      const parent = card.closest('.col-md-6');
+      parent.style.display = card.textContent.toLowerCase().includes(term) ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}
