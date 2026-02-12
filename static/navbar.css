@@ -1,0 +1,98 @@
+/* Navbar */
+.genbridge-navbar {
+  background: #ffffff;
+  padding: 14px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.genbridge-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.genbridge-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;               /* space between logo and text */
+  text-decoration: none;
+}
+
+.genbridge-logo-only {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 50%;     /* remove if logo is not circular */
+}
+
+/* Wordmark (text only, separate visual identity) */
+.genbridge-wordmark {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  color: #d22b2b;         /* Genbridge red */
+  line-height: 1;
+}
+
+/* Optional: hover effect like brand banners */
+.genbridge-brand-wrap:hover .genbridge-wordmark {
+  text-decoration: none;
+}
+
+.genbridge-navlinks-right {
+  gap: 18px;
+}
+
+/* default link */
+.genbridge-toplink {
+  font-weight: 600;
+  color: #222 ;
+  padding: 10px 6px;
+  text-decoration: none;
+}
+
+/* underline ONLY when dropdown is open */
+.nav-item.dropdown.show > .genbridge-toplink {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+
+/* no hover underline */
+.genbridge-toplink:hover {
+  text-decoration: none;
+}
+
+
+.genbridge-login-btn {
+  background: #d22b2b;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: 700;
+  border: none;
+  text-decoration: none;
+}
+
+.genbridge-login-btn:hover { background: #6f2322; color: #fff; }
+
+.genbridge-mybooking-btn {
+  background: #f3f3f3;
+  border: 1px solid #ddd;
+  color: #333;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.genbridge-mybooking-pill {
+  background: #f3f3f3;
+  border: 1px solid #ddd;
+  color: #333;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+
