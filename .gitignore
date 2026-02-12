@@ -1,5 +1,16 @@
 ﻿__pycache__/
 *.pyc
+<<<<<<< HEAD
 
 __pycache__/
 *.pyc
+=======
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+*.db
+*.sqlite
+*.sqlite3
+>>>>>>> origin/Chad
