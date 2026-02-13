@@ -1,1 +1,1 @@
-Im worried of accidentally deleting anything, will put my code her first and double check
+css files need to be in static folder, htmls need to be in a template, db files need data folder
