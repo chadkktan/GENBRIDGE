@@ -1,0 +1,41 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Create Profile</title>
+
+    {# CSS #} 
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/create_profile.css') }}">
+</head>
+
+<body>
+    {% include "partials/create_profile/_topbar.html" %}
+
+    <div class="page">
+        <form class="card" method="POST" action="/save-profile" enctype="multipart/form-data" id="wizardForm">
+
+            {# Flash errors from backend (e.g., server-side validation) #}
+            {% with messages = get_flashed_messages(category_filter=['error']) %}
+                {% if messages %}
+                    {% for m in messages %}
+                        <div class="flash">{{ m }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% include "partials/create_profile/_step1.html" %}
+            {% include "partials/create_profile/_step2.html" %}
+            {% include "partials/create_profile/_step3.html" %}
+
+            <div class="footer-note">
+                You can always update your profile information later in your settings
+            </div>
+        </form>
+    </div>
+
+    {# JS #} 
+    <script src="{{ url_for('static', filename='js/create_profile.js') }}"></script>
+</body>
+</html>

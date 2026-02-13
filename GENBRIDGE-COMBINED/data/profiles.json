@@ -1,0 +1,36 @@
+{
+  "250377y@mail.com": {
+    "first_name": "Justin",
+    "last_name": "Ferrer",
+    "email": "250377y@mail.com",
+    "phone": "98009000",
+    "dob": "2006-05-22",
+    "location": "Singapore, East",
+    "website": "-",
+    "bio": "My Bio Here",
+    "role": "Young Person",
+    "interests": [
+      "Cooking",
+      "Gardening",
+      "Sports"
+    ],
+    "avatar_filename": null
+  },
+  "guanhee@gmail.com": {
+    "avatar_filename": null,
+    "bio": "My bio",
+    "dob": "2010-02-01",
+    "email": "guanhee@gmail.com",
+    "first_name": "Guan",
+    "interests": [
+      "Cooking",
+      "Movies",
+      "Crafts"
+    ],
+    "last_name": "Hee",
+    "location": "Singapore, West",
+    "phone": "91000000",
+    "role": "Young Person",
+    "website": "-"
+  }
+}

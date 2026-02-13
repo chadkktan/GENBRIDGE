@@ -1,0 +1,793 @@
+/* =========================
+   Theme variables
+========================= */
+:root {
+    --red: #d32f2f;
+    --red-dark: #b71c1c;
+    --green: #1bbc23;
+
+    --bg: #f5f5f5;
+    --card: #ffffff;
+    --text: #222222;
+    --muted: #666666;
+    --border: #d3d3d3;
+    --soft: #f7f7f7;
+
+    --dark-bg: #121212;
+    --dark-card: #1e1e1e;
+    --dark-soft: #2a2a2a;
+    --dark-border: #333333;
+    --dark-muted: #aaaaaa;
+
+    --shadow-card: 0 10px 22px rgba(0, 0, 0, 0.06);
+}
+
+/* =========================
+   Base
+========================= */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+body.dark {
+    background: var(--dark-bg);
+    color: #ffffff;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+/* =========================
+   Header
+========================= */
+.profile-header {
+    background: var(--card);
+    padding: 15px 0;
+    position: relative;
+}
+
+body.dark .profile-header {
+    background: var(--dark-card);
+}
+
+.profile-header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.profile-left {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+/* Avatar */
+.avatar-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+}
+
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid var(--red);
+    object-fit: cover;
+    display: block;
+    background: #ffffff;
+}
+
+#avatarInput {
+    display: none;
+}
+
+.avatar-upload {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    width: 26px;
+    height: 26px;
+    background: var(--red);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    border: 2px solid #ffffff;
+}
+
+.avatar-upload svg {
+    display: block;
+}
+
+.profile-header h1 {
+    margin: 0;
+}
+
+.profile-header p {
+    margin: 2px 0 6px;
+}
+
+/* ================= BACK BUTTON ================= */
+.back-btn {
+    position: absolute;
+    left: 18px;
+    top: 28px;
+
+    width: 40px;
+    height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text-decoration: none;
+    font-size: 28px;
+    font-weight: 900;
+
+    color:#d32f2f;
+    background: var(--soft);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    cursor: pointer;
+}
+
+.back-btn:hover {
+    transform: translateY(-2px);
+}
+
+body.dark .back-btn {
+    color: #fff;
+    background: var(--dark-soft);
+    border-color: var(--dark-border);
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    margin-right: 5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #ffffff;
+}
+
+.badge.red {
+    background: #e53935;
+}
+
+.badge.black {
+    background: #000000;
+}
+
+.badge.verified {
+    background: var(--green);
+}
+
+/* =========================
+   Cards
+========================= */
+.card {
+    position: relative;
+    background: var(--card);
+    padding: 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-card);
+}
+
+body.dark .card {
+    background: var(--dark-card);
+}
+
+/* Edit actions (top right in personal info card) */
+.edit-actions {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* =========================
+   Flash messages
+========================= */
+.flash {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 800;
+    border: 1px solid #e3e3e3;
+    background: #ffffff;
+}
+
+.flash.error {
+    border-color: #e53935;
+    background: #fff3f3;
+    color: #e53935;
+}
+
+.flash.success {
+    border-color: #2e7d32;
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* =========================
+   Buttons
+========================= */
+.btn {
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: transform 0.05s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-red {
+    background: var(--red-dark);
+    color: #ffffff;
+}
+
+.btn-black {
+    background: #000000;
+    color: #ffffff;
+}
+
+.btn-danger {
+    background: var(--red);
+    color: #ffffff;
+}
+
+.btn-outline {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid var(--border);
+}
+
+body.dark .btn-outline {
+    background: var(--dark-card);
+    color: #ffffff;
+    border-color: #444444;
+}
+
+.btn:hover {
+    filter: brightness(0.96);
+}
+
+/* =========================
+   Form (Personal info section)
+========================= */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    row-gap: 8px;
+    column-gap: 30px;
+    margin-top: 12px;
+}
+
+.bio-wide {
+    grid-column: 1 / 3;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+/* Inputs */
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #f4f4f4;
+    font-size: 13px;
+    font-weight: 300;
+    color: #555555;
+    outline: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.14);
+}
+
+body.dark input,
+body.dark textarea,
+body.dark select {
+    background: var(--dark-soft);
+    border-color: var(--dark-border);
+    color: #dddddd;
+}
+
+textarea {
+    resize: none;
+    height: 65px;
+    font-family: inherit;
+}
+
+/* Fields become white only when editing is enabled */
+input.editable,
+textarea.editable {
+    background: #ffffff;
+    color: #111111;
+}
+
+body.dark input.editable,
+body.dark textarea.editable {
+    background: var(--dark-card);
+    color: #ffffff;
+}
+
+/* Validation error text below fields */
+.error-text {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #e53935;
+    display: none;
+}
+
+.error-text.show {
+    display: block;
+}
+
+body.dark .error-text {
+    color: #ff6b6b;
+}
+
+/* =========================
+   Settings rows
+========================= */
+.settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    background: var(--soft);
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-top: 12px;
+}
+
+body.dark .settings-row {
+    background: var(--dark-soft);
+}
+
+.settings-left {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    min-width: 0; /* allows text truncation */
+}
+
+.settings-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #efefef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+body.dark .settings-icon {
+    background: #3a3a3a;
+}
+
+.settings-text strong {
+    display: block;
+    font-size: 14px;
+}
+
+.settings-text span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+body.dark .settings-text span {
+    color: var(--dark-muted);
+}
+
+/* Make the language select smaller  */
+.settings-row select.lang-select {
+    width: 140px;
+    max-width: 140px;
+}
+
+/* =========================
+   Active sessions
+========================= */
+.sessions-wrapper {
+    margin-top: 12px;
+}
+
+.session-card {
+    background: var(--soft);
+    border: 1px solid #dddddd;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+body.dark .session-card {
+    background: var(--dark-soft);
+    border-color: #3a3a3a;
+}
+
+.session-info strong {
+    display: block;
+    font-size: 14px;
+}
+
+.session-info span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+body.dark .session-info span {
+    color: var(--dark-muted);
+}
+
+.session-active {
+    color: #e53935;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.session-revoke {
+    color: #e53935;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.session-revoke:hover {
+    text-decoration: underline;
+}
+
+/* =========================
+   Toggle switch
+========================= */
+.switch {
+    position: relative;
+    width: 42px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    inset: 0;
+    background: #cccccc;
+    border-radius: 22px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.slider::before {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    bottom: 3px;
+    background: #ffffff;
+    border-radius: 50%;
+    transition: 0.2s;
+}
+
+input:checked + .slider {
+    background: #e53935;
+}
+
+input:checked + .slider::before {
+    transform: translateX(20px);
+}
+
+/* =========================
+   Modals (Change Password + Start Over)
+========================= */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 9999;
+}
+
+.modal-backdrop.show {
+    display: flex;
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 520px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+body.dark .modal-card {
+    background: var(--dark-card);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #555555;
+}
+
+body.dark .modal-close {
+    color: #dddddd;
+}
+
+.pw-form {
+    display: grid;
+    gap: 12px;
+}
+
+.pw-field {
+    max-width: 360px; 
+}
+
+.pw-input-wrap {
+    position: relative;
+}
+
+.pw-input-wrap input {
+    width: 100%;
+    padding-right: 34px; /* space for eye */
+}
+
+.eye-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    line-height: 0;
+    color: #666666;
+}
+
+body.dark .eye-btn {
+    color: #bbbbbb;
+}
+
+.pw-hint {
+    font-size: 12px;
+    color: #666666;
+    margin-top: 6px;
+    line-height: 1.35;
+}
+
+body.dark .pw-hint {
+    color: #aaaaaa;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+/* =========================
+   Confirm modals (Sign out / Delete)
+========================= */
+.gb-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 9999;
+}
+
+.gb-modal-overlay.show {
+    display: flex;
+}
+
+.gb-modal {
+    width: 100%;
+    max-width: 520px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+body.dark .gb-modal {
+    background: var(--dark-card);
+}
+
+.gb-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.gb-modal-title {
+    margin: 0;
+    font-size: 18px;
+}
+
+.gb-modal-x {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #555555;
+}
+
+body.dark .gb-modal-x {
+    color: #dddddd;
+}
+
+.gb-modal-text {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #333333;
+    line-height: 1.45;
+}
+
+.gb-modal-subtext {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: #666666;
+    line-height: 1.45;
+}
+
+body.dark .gb-modal-text {
+    color: #eeeeee;
+}
+
+body.dark .gb-modal-subtext {
+    color: #bbbbbb;
+}
+
+.gb-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.gb-btn {
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.gb-btn-cancel {
+    background: #ffffff;
+    color: #111111;
+    border: 1px solid #d3d3d3;
+}
+
+body.dark .gb-btn-cancel {
+    background: var(--dark-card);
+    color: #ffffff;
+    border-color: #444444;
+}
+
+.gb-btn-danger {
+    background: var(--red);
+    color: #ffffff;
+}
+
+/* =========================
+   Responsive tweaks
+========================= */
+@media (max-width: 720px) {
+    .container {
+        padding: 18px;
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+        column-gap: 0;
+    }
+
+    .bio-wide {
+        grid-column: auto;
+    }
+
+    .settings-row {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .settings-row select.lang-select {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 520px) {
+    .profile-left {
+        gap: 14px;
+    }
+
+    .edit-actions {
+        position: static;
+        margin-top: 10px;
+        justify-content: flex-end;
+    }
+
+    .card {
+        padding: 14px;
+    }
+}
