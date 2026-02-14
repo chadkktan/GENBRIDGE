@@ -4,6 +4,29 @@ from datetime import datetime
 from functools import wraps
 import os
 import uuid
+from flask_socketio import SocketIO
+from services import (
+    get_db,
+    get_media_db,
+    init_db,
+    init_media_db,
+    register_socket_events
+)
+
+from auth import (
+    get_current_user_from_session,
+    get_user_by_id,
+    search_users,
+    require_login
+)
+
+from community_db import (
+    get_community_by_id,
+    init_db as init_community_db,
+    ensure_members_table
+)
+
+from config import SECRET_KEY, ensure_dirs
 
 # -----------------------
 # ✅ STORIES / POSTS (SQLite)
@@ -77,6 +100,15 @@ from community_db import (
 app = Flask(__name__)
 ensure_dirs()
 app.config["SECRET_KEY"] = SECRET_KEY
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+ensure_dirs()
+init_db()
+init_media_db()
+init_community_db()
+ensure_members_table()
+register_socket_events(socketio)
+
 
 # ✅ Initialize SQLite + Migration (communities DB)
 init_db()
@@ -491,7 +523,714 @@ def delete_post(post_id):
 
     db_helper.delete_post(post_id)
     return redirect(url_for("stories"))
+# -------------------------
+# API: Search Users (for adding chats)
+# -------------------------
+@app.route("/api/users/search", methods=["GET"])
+@require_login
+def search_users_api():
+    """Search for users to start a chat with"""
+    query = request.args.get('q', '')
+    
+    if len(query) < 2:
+        return jsonify({
+            "status": "error",
+            "message": "Query must be at least 2 characters"
+        }), 400
+    
+    current_user = get_current_user()
+    results = search_users(query)
+    
+    # Filter out current user from results
+    results = [u for u in results if u['user_id'] != current_user['user_id']]
+    
+    return jsonify({
+        "status": "success",
+        "users": results
+    }), 200
 
+# -------------------------
+# API: Chats (Private)
+# -------------------------
+@app.route("/api/chats", methods=["POST"])
+@require_login
+def create_chat():
+    """Create a new PRIVATE chat between current user and another user"""
+    try:
+        current_user = get_current_user()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"status": "error", "message": "Invalid JSON"}), 400
+
+        # Get the other user's ID
+        other_user_id = data.get("user_id")
+        
+        if not other_user_id:
+            return jsonify({
+                "status": "error", 
+                "message": "User ID is required"
+            }), 400
+
+        # Verify the other user exists
+        other_user = get_user_by_id(other_user_id)
+        if not other_user:
+            return jsonify({
+                "status": "error", 
+                "message": "User not found"
+            }), 404
+
+        # Get nickname from their user data
+        nickname = other_user.get('name', other_user_id)
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Check if private chat already exists between these two users
+        cursor.execute("""
+            SELECT id FROM chats 
+            WHERE (user_id = ? AND creator_id = ?) 
+               OR (user_id = ? AND creator_id = ?)
+        """, (other_user_id, current_user['user_id'], 
+              current_user['user_id'], other_user_id))
+        existing = cursor.fetchone()
+        
+        if existing:
+            conn.close()
+            print(f"⚠️  Private chat already exists between {current_user['user_id']} and {other_user_id}")
+            return jsonify({
+                "status": "error", 
+                "message": "Chat already exists",
+                "chat_id": existing["id"]
+            }), 409
+
+        # Insert new PRIVATE chat
+        cursor.execute("""
+            INSERT INTO chats (user_id, nickname, creator_id, created_at)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        """, (other_user_id, nickname, current_user['user_id']))
+
+        conn.commit()
+        chat_id = cursor.lastrowid
+        conn.close()
+
+        print(f"✅ Private chat created: {nickname} (Chat ID: {chat_id})")
+        print(f"   Participants: {current_user['user_id']} ↔️ {other_user_id}")
+
+        chat_data = {
+            "chat_id": chat_id,
+            "user_id": other_user_id,
+            "nickname": nickname,
+            "creator_id": current_user['user_id'],
+            "last_message": "",
+            "last_message_time": None,
+            "created_at": datetime.now().isoformat()
+        }
+        socketio.emit('chat_created', chat_data, namespace='/')
+
+        return jsonify({
+            "status": "success", 
+            "chat_id": chat_id, 
+            "user_id": other_user_id,
+            "nickname": nickname
+        }), 201
+
+    except Exception as e:
+        print(f"❌ Error creating chat: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/chats", methods=["GET"])
+@require_login
+def get_chats():
+    """Get all PRIVATE chats for current user"""
+    try:
+        current_user = get_current_user()
+        user_id = current_user['user_id']
+        
+        print(f"📋 GET /api/chats called for user: {user_id}")
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Get chats where user is EITHER creator OR recipient
+        cursor.execute("""
+            SELECT 
+                c.id AS chat_id, 
+                c.user_id, 
+                c.nickname,
+                c.creator_id,
+                c.created_at,
+                (
+                    SELECT m.content 
+                    FROM messages m 
+                    WHERE m.chat_id = c.id 
+                    ORDER BY m.timestamp DESC 
+                    LIMIT 1
+                ) AS last_message,
+                (
+                    SELECT m.timestamp 
+                    FROM messages m 
+                    WHERE m.chat_id = c.id 
+                    ORDER BY m.timestamp DESC 
+                    LIMIT 1
+                ) AS last_message_time
+            FROM chats c
+            WHERE c.user_id = ? OR c.creator_id = ?
+            ORDER BY 
+                CASE 
+                    WHEN last_message_time IS NULL THEN c.created_at 
+                    ELSE last_message_time 
+                END DESC
+        """, (user_id, user_id))
+        
+        rows = cursor.fetchall()
+        conn.close()
+
+        chats = []
+        for row in rows:
+            chats.append({
+                "chat_id": row["chat_id"],
+                "user_id": row["user_id"],
+                "nickname": row["nickname"],
+                "creator_id": row["creator_id"],
+                "last_message": row["last_message"] or "",
+                "last_message_time": row["last_message_time"],
+                "created_at": row["created_at"]
+            })
+
+        print(f"📋 Returned {len(chats)} private chats for {user_id}")
+        return jsonify({"status": "success", "chats": chats}), 200
+
+    except Exception as e:
+        print(f"❌ Error getting chats: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/chats/<int:chat_id>", methods=["DELETE"])
+@require_login
+def delete_chat(chat_id):
+    """Delete a chat and all its messages"""
+    try:
+        current_user = get_current_user()
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Verify user is a participant in this chat
+        cursor.execute("""
+            SELECT id, nickname, creator_id, user_id 
+            FROM chats 
+            WHERE id = ? AND (creator_id = ? OR user_id = ?)
+        """, (chat_id, current_user['user_id'], current_user['user_id']))
+        
+        chat = cursor.fetchone()
+        if not chat:
+            conn.close()
+            return jsonify({
+                "status": "error", 
+                "message": "Chat not found or access denied"
+            }), 404
+
+        # Delete all messages
+        cursor.execute("DELETE FROM messages WHERE chat_id = ?", (chat_id,))
+        
+        # Delete media files associated with this chat
+        media_conn = get_media_db()
+        media_cursor = media_conn.cursor()
+        media_cursor.execute("DELETE FROM media WHERE chat_id = ?", (chat_id,))
+        media_conn.commit()
+        media_conn.close()
+        
+        # Delete chat
+        cursor.execute("DELETE FROM chats WHERE id = ?", (chat_id,))
+        
+        conn.commit()
+        conn.close()
+
+        print(f"🗑️  Chat deleted: {chat['nickname']} (Chat ID: {chat_id})")
+
+        socketio.emit('chat_deleted', {"chat_id": chat_id}, namespace='/')
+
+        return jsonify({"status": "success", "message": "Chat deleted"}), 200
+
+    except Exception as e:
+        print(f"❌ Error deleting chat: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+# -------------------------
+# API: Messages
+# -------------------------
+@app.route("/api/messages/send", methods=["POST"])
+@require_login
+def send_message():
+    """Send a text message"""
+    try:
+        current_user = get_current_user()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"status": "error", "message": "Invalid JSON"}), 400
+
+        chat_id = data.get("chat_id")
+        content = data.get("content", "").strip()
+
+        if not chat_id:
+            return jsonify({
+                "status": "error", 
+                "message": "Chat ID is required"
+            }), 400
+
+        if not content:
+            return jsonify({
+                "status": "error", 
+                "message": "Message content is required"
+            }), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Verify user is participant in this chat
+        cursor.execute("""
+            SELECT nickname, user_id, creator_id 
+            FROM chats 
+            WHERE id = ? AND (user_id = ? OR creator_id = ?)
+        """, (chat_id, current_user['user_id'], current_user['user_id']))
+        
+        chat = cursor.fetchone()
+        if not chat:
+            conn.close()
+            return jsonify({
+                "status": "error", 
+                "message": "Chat not found or access denied"
+            }), 404
+
+        # Insert message
+        cursor.execute("""
+            INSERT INTO messages (chat_id, sender_id, content, timestamp)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        """, (chat_id, current_user['user_id'], content))
+
+        conn.commit()
+        message_id = cursor.lastrowid
+        
+        cursor.execute("SELECT timestamp FROM messages WHERE id = ?", (message_id,))
+        timestamp = cursor.fetchone()['timestamp']
+        conn.close()
+
+        # Determine recipient
+        recipient_id = chat['user_id'] if current_user['user_id'] == chat['creator_id'] else chat['creator_id']
+        recipient_name = chat['nickname']
+        
+        print(f"💬 Message sent in Chat {chat_id}:")
+        print(f"   From: {current_user['name']} ({current_user['user_id']}) → To: {recipient_name} ({recipient_id})")
+        print(f"   Message ID: {message_id}")
+        print(f"   Content: \"{content}\"")
+
+        message_data = {
+            "message_id": message_id,
+            "chat_id": chat_id,
+            "sender_id": current_user['user_id'],
+            "content": content,
+            "media_url": None,
+            "media_type": None,
+            "timestamp": timestamp
+        }
+        socketio.emit('new_message', message_data, namespace='/')
+
+        return jsonify({
+            "status": "success", 
+            "message_id": message_id
+        }), 201
+
+    except Exception as e:
+        print(f"❌ Error sending message: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/media/upload", methods=["POST"])
+@require_login
+def upload_media():
+    """Upload media file to separate database"""
+    try:
+        current_user = get_current_user()
+        data = request.get_json()
+        
+        chat_id = data.get("chat_id")
+        filename = data.get("filename")
+        file_data = data.get("data")  # Base64
+        mime_type = data.get("mime_type")
+
+        if not all([chat_id, filename, file_data, mime_type]):
+            return jsonify({
+                "status": "error", 
+                "message": "Missing required fields"
+            }), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Verify user is participant
+        cursor.execute("""
+            SELECT nickname, user_id, creator_id 
+            FROM chats 
+            WHERE id = ? AND (user_id = ? OR creator_id = ?)
+        """, (chat_id, current_user['user_id'], current_user['user_id']))
+        
+        chat = cursor.fetchone()
+        if not chat:
+            conn.close()
+            return jsonify({
+                "status": "error", 
+                "message": "Chat not found or access denied"
+            }), 404
+
+        # Save to media database
+        media_conn = get_media_db()
+        media_cursor = media_conn.cursor()
+
+        media_cursor.execute("""
+            INSERT INTO media (chat_id, sender_id, filename, data, mime_type, uploaded_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """, (chat_id, current_user['user_id'], filename, file_data, mime_type))
+
+        media_conn.commit()
+        media_id = media_cursor.lastrowid
+        media_conn.close()
+
+        content = f"Shared {mime_type.split('/')[0]}: {filename}"
+        
+        cursor.execute("""
+            INSERT INTO messages (chat_id, sender_id, content, media_id, timestamp)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """, (chat_id, current_user['user_id'], content, media_id))
+
+        conn.commit()
+        message_id = cursor.lastrowid
+        
+        cursor.execute("SELECT timestamp FROM messages WHERE id = ?", (message_id,))
+        timestamp = cursor.fetchone()['timestamp']
+        conn.close()
+
+        recipient_id = chat['user_id'] if current_user['user_id'] == chat['creator_id'] else chat['creator_id']
+        recipient_name = chat['nickname']
+        
+        print(f"💬 Media message sent in Chat {chat_id}:")
+        print(f"   From: {current_user['name']} ({current_user['user_id']}) → To: {recipient_name} ({recipient_id})")
+        print(f"   Message ID: {message_id}, Media ID: {media_id}")
+        print(f"   File: {filename} ({mime_type})")
+
+        message_data = {
+            "message_id": message_id,
+            "chat_id": chat_id,
+            "sender_id": current_user['user_id'],
+            "content": content,
+            "media_url": file_data,
+            "media_type": mime_type,
+            "timestamp": timestamp
+        }
+        socketio.emit('new_message', message_data, namespace='/')
+
+        return jsonify({
+            "status": "success", 
+            "message_id": message_id,
+            "media_id": media_id
+        }), 201
+
+    except Exception as e:
+        print(f"❌ Error uploading media: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/messages/<int:message_id>", methods=["PUT"])
+@require_login
+def edit_message(message_id):
+    """Edit a message (only if you're the sender)"""
+    try:
+        current_user = get_current_user()
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({"status": "error", "message": "Invalid JSON"}), 400
+
+        content = data.get("content", "").strip()
+
+        if not content:
+            return jsonify({
+                "status": "error", 
+                "message": "Message content is required"
+            }), 400
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT chat_id, sender_id 
+            FROM messages 
+            WHERE id = ?
+        """, (message_id,))
+        
+        result = cursor.fetchone()
+        if not result:
+            conn.close()
+            return jsonify({
+                "status": "error", 
+                "message": "Message not found"
+            }), 404
+
+        # Verify user is the sender
+        if result['sender_id'] != current_user['user_id']:
+            conn.close()
+            return jsonify({
+                "status": "error", 
+                "message": "You can only edit your own messages"
+            }), 403
+
+        chat_id = result['chat_id']
+
+        cursor.execute("UPDATE messages SET content = ? WHERE id = ?", (content, message_id))
+
+        conn.commit()
+        conn.close()
+
+        print(f"✏️  Message edited:")
+        print(f"   Message ID: {message_id} in Chat {chat_id}")
+        print(f"   Sender: {current_user['name']} ({current_user['user_id']})")
+        print(f"   New content: \"{content}\"")
+
+        socketio.emit('message_edited', {
+            "message_id": message_id,
+            "chat_id": chat_id,
+            "content": content
+        }, namespace='/')
+
+        return jsonify({
+            "status": "success", 
+            "message_id": message_id
+        }), 200
+
+    except Exception as e:
+        print(f"❌ Error editing message: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/messages/<int:message_id>", methods=["DELETE"])
+@require_login
+def delete_message(message_id):
+    """Delete a message (only if you're the sender)"""
+    try:
+        current_user = get_current_user()
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT chat_id, sender_id, content, media_id 
+            FROM messages 
+            WHERE id = ?
+        """, (message_id,))
+        
+        result = cursor.fetchone()
+        if not result:
+            conn.close()
+            return jsonify({
+                "status": "error", 
+                "message": "Message not found"
+            }), 404
+
+        # Verify user is the sender
+        if result['sender_id'] != current_user['user_id']:
+            conn.close()
+            return jsonify({
+                "status": "error", 
+                "message": "You can only delete your own messages"
+            }), 403
+
+        chat_id = result['chat_id']
+        content = result['content']
+        media_id = result['media_id']
+
+        # Delete associated media if exists
+        if media_id:
+            media_conn = get_media_db()
+            media_cursor = media_conn.cursor()
+            media_cursor.execute("DELETE FROM media WHERE id = ?", (media_id,))
+            media_conn.commit()
+            media_conn.close()
+
+        cursor.execute("DELETE FROM messages WHERE id = ?", (message_id,))
+        conn.commit()
+
+        # Get the NEW last message for this chat
+        cursor.execute("""
+            SELECT content, timestamp 
+            FROM messages 
+            WHERE chat_id = ? 
+            ORDER BY timestamp DESC 
+            LIMIT 1
+        """, (chat_id,))
+        
+        last_msg = cursor.fetchone()
+        new_last_message = last_msg['content'] if last_msg else ""
+        
+        conn.close()
+
+        print(f"🗑️  Message deleted:")
+        print(f"   Message ID: {message_id} from Chat {chat_id}")
+        print(f"   Sender: {current_user['name']} ({current_user['user_id']})")
+        print(f"   Content: \"{content}\"")
+        print(f"   New last message: \"{new_last_message}\"")
+
+        socketio.emit('message_deleted', {
+            "message_id": message_id,
+            "chat_id": chat_id,
+            "new_last_message": new_last_message
+        }, namespace='/')
+
+        return jsonify({
+            "status": "success", 
+            "message": "Message deleted",
+            "new_last_message": new_last_message
+        }), 200
+
+    except Exception as e:
+        print(f"❌ Error deleting message: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+@app.route("/api/messages/<int:chat_id>", methods=["GET"])
+@require_login
+def get_messages(chat_id):
+    """Get all messages for a specific chat"""
+    try:
+        current_user = get_current_user()
+        conn = get_db()
+        cursor = conn.cursor()
+
+        # Verify user is participant
+        cursor.execute("""
+            SELECT id, nickname 
+            FROM chats 
+            WHERE id = ? AND (user_id = ? OR creator_id = ?)
+        """, (chat_id, current_user['user_id'], current_user['user_id']))
+        
+        chat = cursor.fetchone()
+        if not chat:
+            conn.close()
+            return jsonify({
+                "status": "error", 
+                "message": "Chat not found or access denied"
+            }), 404
+
+        # Get messages
+        cursor.execute("""
+            SELECT id as message_id, sender_id, content, media_id, timestamp
+            FROM messages
+            WHERE chat_id = ?
+            ORDER BY timestamp ASC
+        """, (chat_id,))
+
+        messages = cursor.fetchall()
+        conn.close()
+
+        # Get media data for messages with media
+        media_conn = get_media_db()
+        media_cursor = media_conn.cursor()
+
+        result_messages = []
+        for msg in messages:
+            msg_dict = dict(msg)
+            
+            if msg['media_id']:
+                media_cursor.execute("""
+                    SELECT data, mime_type FROM media WHERE id = ?
+                """, (msg['media_id'],))
+                media = media_cursor.fetchone()
+                
+                if media:
+                    msg_dict['media_url'] = media['data']
+                    msg_dict['media_type'] = media['mime_type']
+                else:
+                    msg_dict['media_url'] = None
+                    msg_dict['media_type'] = None
+            else:
+                msg_dict['media_url'] = None
+                msg_dict['media_type'] = None
+            
+            result_messages.append(msg_dict)
+
+        media_conn.close()
+
+        print(f"📨 Retrieved {len(result_messages)} messages from Chat {chat_id} ({chat['nickname']})")
+
+        return jsonify({
+            "status": "success",
+            "messages": result_messages
+        }), 200
+
+    except Exception as e:
+        print(f"❌ Error getting messages: {str(e)}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error", 
+            "message": f"Server error: {str(e)}"
+        }), 500
+
+
+#-------------------------
+#Community routes  
+#-------------------------
+@app.route('/community/post')
+def community_post():
+    return render_template('community.html')
+
+@app.route('/api/post/<post_id>')
+def get_post(post_id):
+    try:
+        community = get_community_by_id(int(post_id))
+        if not community:
+            return jsonify({"error": "Not found"}), 404
+        
+        c = dict(community)
+        
+        return jsonify({
+            "community": {
+                "name": c['name'],
+                
+            },
+            "post": {
+                "title": c['name'],
+                "description": c['description'],
+                "content": c['description'],
+                "author": {
+                    "username": c.get('created_by_email', 'Admin').split('@')[0],
+                    "avatar": c.get('created_by_email', '?')[0].upper()
+                },
+                "timestamp": "Recently"
+            },
+            "comments": []
+        })
+    except:
+        return jsonify({"error": "Error"}), 500
 
 # -----------------------
 # Context
