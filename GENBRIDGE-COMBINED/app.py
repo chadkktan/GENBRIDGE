@@ -4,6 +4,7 @@ from datetime import datetime
 from functools import wraps
 import os
 import uuid
+import traceback
 from flask_socketio import SocketIO
 from services import (
     get_db,
@@ -538,7 +539,7 @@ def search_users_api():
             "message": "Query must be at least 2 characters"
         }), 400
     
-    current_user = get_current_user()
+    current_user = get_current_user_from_session(session)
     results = search_users(query)
     
     # Filter out current user from results
@@ -557,7 +558,7 @@ def search_users_api():
 def create_chat():
     """Create a new PRIVATE chat between current user and another user"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_from_session(session)
         data = request.get_json()
         
         if not data:
@@ -648,7 +649,7 @@ def create_chat():
 def get_chats():
     """Get all PRIVATE chats for current user"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_from_session(session)
         user_id = current_user['user_id']
         
         print(f"📋 GET /api/chats called for user: {user_id}")
@@ -717,7 +718,7 @@ def get_chats():
 def delete_chat(chat_id):
     """Delete a chat and all its messages"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_from_session(session)
         conn = get_db()
         cursor = conn.cursor()
 
@@ -774,7 +775,7 @@ def delete_chat(chat_id):
 def send_message():
     """Send a text message"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_from_session(session)
         data = request.get_json()
         
         if not data:
@@ -864,7 +865,7 @@ def send_message():
 def upload_media():
     """Upload media file to separate database"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_from_session(session)
         data = request.get_json()
         
         chat_id = data.get("chat_id")
@@ -961,7 +962,7 @@ def upload_media():
 def edit_message(message_id):
     """Edit a message (only if you're the sender)"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_from_session(session)
         data = request.get_json()
         
         if not data:
@@ -1036,7 +1037,7 @@ def edit_message(message_id):
 def delete_message(message_id):
     """Delete a message (only if you're the sender)"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_from_session(session)
         conn = get_db()
         cursor = conn.cursor()
 
@@ -1122,7 +1123,7 @@ def delete_message(message_id):
 def get_messages(chat_id):
     """Get all messages for a specific chat"""
     try:
-        current_user = get_current_user()
+        current_user = get_current_user_from_session(session)
         conn = get_db()
         cursor = conn.cursor()
 
