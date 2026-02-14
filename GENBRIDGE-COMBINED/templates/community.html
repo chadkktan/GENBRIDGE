@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Post</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='community.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <button class="back-btn" onclick="goBack()">
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Back
+                </button>
+                <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.3);"></div>
+                <h1 class="header-title" id="communityName">Loading...</h1>
+            </div>
+            <div class="user-avatar">
+                <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div id="loadingIndicator" class="loading">Loading post...</div>
+        <div id="errorIndicator" class="loading hidden" style="color: #dc2626;">Error loading post. Please try again.</div>
+        
+        <!-- Post Card -->
+        <div class="post-card hidden" id="postCard">
+            <div class="post-content">
+                <!-- Author Info -->
+                <div class="post-author">
+                    <div class="author-avatar" id="postAuthorAvatar"></div>
+                    <div class="author-info">
+                        <div class="author-name">
+                            <span class="community-name" id="postCommunityName"></span>
+                            <span class="post-time" id="postTime"></span>
+                        </div>
+                        <div class="posted-by" id="postedBy"></div>
+                    </div>
+                </div>
+
+                <!-- Post Title -->
+                <h1 class="post-title" id="postTitle"></h1>
+
+                <!-- Post Body -->
+                <div class="post-body" id="postBody"></div>
+
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <button class="action-btn">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        <span id="commentCount"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comments Card -->
+        <div class="comments-card hidden" id="commentsCard">
+            <!-- Comments Header -->
+            <div class="comments-header">
+                <h2 class="comments-title">Comments (<span id="commentCountHeader">0</span>)</h2>
+            </div>
+
+            <!-- Comment Input -->
+            <div class="comment-input-section">
+                <div class="comment-input-wrapper">
+                    <div class="input-avatar">
+                        <svg class="icon-sm" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                    </div>
+                    <div style="flex: 1;">
+                        <textarea id="mainCommentInput" class="comment-input" placeholder="Add a comment..."></textarea>
+                        <div class="input-actions">
+                            <button class="cancel-btn" onclick="clearMainComment()">Cancel</button>
+                            <button class="submit-btn" onclick="submitComment()">Comment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments List / Empty State -->
+            <div id="commentsList"></div>
+            <div id="emptyComments" class="empty-comments hidden">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 80px; height: 80px; margin: 0 auto 20px; opacity: 0.3;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <h3 style="font-size: 20px; margin-bottom: 10px; color: #6b7280;">No comments yet</h3>
+                <p style="font-size: 14px; color: #9ca3af;">Be the first to share your thoughts!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPostId = null;
+        let communityData = null;
+        let comments = [];
+        let nextCommentId = 100;
+
+        // Get post_id from URL parameters
+        function getPostId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('post_id') || urlParams.get('id');
+        }
+
+        // Load post data from API or JSON
+        async function loadData() {
+            try {
+                currentPostId = getPostId();
+                
+                if (!currentPostId) {
+                    throw new Error('No post ID provided');
+                }
+
+                // Try to fetch from API endpoint first
+                let response = await fetch(`/api/post/${currentPostId}`);
+                
+                // If API doesn't exist, fall back to JSON file
+                if (!response.ok) {
+                    console.log('API not available, loading from JSON...');
+                    response = await fetch('/static/communitycontent.json');
+                }
+                
+                const data = await response.json();
+                
+                // Handle different response formats
+                if (data.community && data.post) {
+                    // Direct format from JSON file
+                    communityData = data;
+                } else if (data.post) {
+                    // API response format
+                    communityData = {
+                        community: data.community || {
+                            name: data.post.community_name || 'Community',
+                            color: data.post.community_color || '#dc2626'
+                        },
+                        post: data.post,
+                        comments: data.comments || []
+                    };
+                } else {
+                    throw new Error('Invalid data format');
+                }
+                
+                // Set header color
+                const headerColor = communityData.community.color || '#dc2626';
+                document.querySelector('.header').style.background = headerColor;
+                document.querySelector('.submit-btn').style.background = headerColor;
+                
+                // Load comments
+                comments = communityData.comments ? JSON.parse(JSON.stringify(communityData.comments)) : [];
+                
+                // Find highest comment ID
+                if (comments.length > 0) {
+                    let maxId = 0;
+                    comments.forEach(comment => {
+                        if (comment.id > maxId) maxId = comment.id;
+                        if (comment.replies) {
+                            comment.replies.forEach(reply => {
+                                if (reply.id > maxId) maxId = reply.id;
+                            });
+                        }
+                    });
+                    nextCommentId = maxId + 1;
+                }
+                
+                displayPost();
+                renderComments();
+                
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('postCard').classList.remove('hidden');
+                document.getElementById('commentsCard').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('errorIndicator').classList.remove('hidden');
+                document.getElementById('errorIndicator').textContent = 
+                    `Error: ${error.message}. Please check the post ID and try again.`;
+            }
+        }
+
+        function displayPost() {
+            const { community, post } = communityData;
+            
+            // Community name in header and post
+            document.getElementById('communityName').textContent = community.name || 'Community';
+            document.getElementById('postCommunityName').textContent = community.name || 'Community';
+            
+            // Author info
+            const authorAvatar = post.author?.avatar || getInitials(post.author?.username || 'User');
+            document.getElementById('postAuthorAvatar').textContent = authorAvatar;
+            document.getElementById('postedBy').textContent = `Posted by ${post.author?.username || 'Anonymous'}`;
+            
+            // Timestamp
+            document.getElementById('postTime').textContent = `• ${post.timestamp || 'Recently'}`;
+            
+            // Post content
+            document.getElementById('postTitle').textContent = post.title || 'Untitled Post';
+            document.getElementById('postBody').textContent = post.content || post.description || '';
+            
+            updateCommentCount();
+        }
+
+        function getInitials(name) {
+            if (!name) return '?';
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        }
+
+        function renderComments() {
+            const commentsList = document.getElementById('commentsList');
+            const emptyState = document.getElementById('emptyComments');
+            
+            if (!comments || comments.length === 0) {
+                // Show empty state
+                commentsList.innerHTML = '';
+                commentsList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                emptyState.style.textAlign = 'center';
+                emptyState.style.padding = '60px 20px';
+                emptyState.style.color = '#9ca3af';
+            } else {
+                // Show comments
+                commentsList.innerHTML = '';
+                commentsList.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+                
+                comments.forEach(comment => {
+                    commentsList.appendChild(createCommentElement(comment));
+                });
+            }
+            
+            updateCommentCount();
+        }
+
+        function createCommentElement(comment) {
+            const commentDiv = document.createElement('div');
+            commentDiv.className = 'comment';
+            commentDiv.dataset.commentId = comment.id;
+
+            const replies = comment.replies || [];
+            const hasReplies = replies.length > 0;
+
+            commentDiv.innerHTML = `
+                <div class="comment-wrapper">
+                    <div class="comment-avatar">${comment.avatar || getInitials(comment.author)}</div>
+                    <div class="comment-content">
+                        <div class="comment-header">
+                            <span class="comment-author">${comment.author || 'Anonymous'}</span>
+                            <span class="comment-time">• ${comment.timestamp || 'just now'}</span>
+                            <button class="collapse-btn" onclick="toggleCollapse(${comment.id})">[−]</button>
+                        </div>
+                        <div class="comment-collapsible" id="collapsible-${comment.id}">
+                            <div class="comment-body">${comment.content || ''}</div>
+                            <div class="comment-actions">
+                                <button class="comment-action-btn" onclick="showReplyBox(${comment.id})">Reply</button>
+                            </div>
+                            <div class="reply-box hidden" id="reply-box-${comment.id}">
+                                <textarea class="reply-input" id="reply-input-${comment.id}" placeholder="Write a reply..."></textarea>
+                                <div class="reply-actions">
+                                    <button class="reply-cancel-btn" onclick="hideReplyBox(${comment.id})">Cancel</button>
+                                    <button class="reply-submit-btn" onclick="submitReply(${comment.id})">Reply</button>
+                                </div>
+                            </div>
+                            ${hasReplies ? `
+                                <div class="nested-replies" id="replies-${comment.id}">
+                                    ${replies.map(reply => createReplyHTML(reply)).join('')}
+                                </div>
+                            ` : `<div class="nested-replies hidden" id="replies-${comment.id}"></div>`}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            return commentDiv;
+        }
+
+        function createReplyHTML(reply) {
+            return `
+                <div class="comment">
+                    <div class="comment-wrapper">
+                        <div class="comment-avatar">${reply.avatar || getInitials(reply.author)}</div>
+                        <div class="comment-content">
+                            <div class="comment-header">
+                                <span class="comment-author">${reply.author || 'Anonymous'}</span>
+                                <span class="comment-time">• ${reply.timestamp || 'just now'}</span>
+                            </div>
+                            <div class="comment-body">${reply.content || ''}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function submitComment() {
+            const input = document.getElementById('mainCommentInput');
+            const content = input.value.trim();
+            
+            if (!content) return;
+
+            const newComment = {
+                id: nextCommentId++,
+                author: 'You',
+                avatar: '👤',
+                timestamp: 'just now',
+                content: content,
+                replies: []
+            };
+
+            comments.push(newComment);
+            
+            // Save to backend (API call)
+            saveComment(newComment);
+            
+            renderComments();
+            input.value = '';
+        }
+
+        function clearMainComment() {
+            document.getElementById('mainCommentInput').value = '';
+        }
+
+        function submitReply(commentId) {
+            const input = document.getElementById(`reply-input-${commentId}`);
+            const content = input.value.trim();
+            
+            if (!content) return;
+
+            const comment = comments.find(c => c.id === commentId);
+            if (!comment) return;
+
+            if (!comment.replies) {
+                comment.replies = [];
+            }
+
+            const newReply = {
+                id: nextCommentId++,
+                author: 'You',
+                avatar: '👤',
+                timestamp: 'just now',
+                content: content
+            };
+
+            comment.replies.push(newReply);
+            
+            // Save to backend (API call)
+            saveReply(commentId, newReply);
+            
+            renderComments();
+        }
+
+        function showReplyBox(commentId) {
+            const replyBox = document.getElementById(`reply-box-${commentId}`);
+            replyBox.classList.remove('hidden');
+            document.getElementById(`reply-input-${commentId}`).focus();
+        }
+
+        function hideReplyBox(commentId) {
+            const replyBox = document.getElementById(`reply-box-${commentId}`);
+            replyBox.classList.add('hidden');
+            document.getElementById(`reply-input-${commentId}`).value = '';
+        }
+
+        function toggleCollapse(commentId) {
+            const collapsible = document.getElementById(`collapsible-${commentId}`);
+            const btn = document.querySelector(`[onclick="toggleCollapse(${commentId})"]`);
+            
+            if (collapsible.classList.contains('hidden')) {
+                collapsible.classList.remove('hidden');
+                btn.textContent = '[−]';
+            } else {
+                collapsible.classList.add('hidden');
+                btn.textContent = '[+]';
+            }
+        }
+
+        function updateCommentCount() {
+            let totalComments = comments.length;
+            comments.forEach(comment => {
+                if (comment.replies) {
+                    totalComments += comment.replies.length;
+                }
+            });
+            
+            document.getElementById('commentCount').textContent = `${totalComments} Comment${totalComments !== 1 ? 's' : ''}`;
+            document.getElementById('commentCountHeader').textContent = totalComments;
+        }
+
+        // API calls (implement these based on your backend)
+        async function saveComment(comment) {
+            try {
+                const response = await fetch(`/api/post/${currentPostId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: comment.content,
+                        author: comment.author,
+                        avatar: comment.avatar
+                    })
+                });
+                
+                if (!response.ok) {
+                    console.warn('Comment not saved to backend');
+                }
+            } catch (error) {
+                console.error('Error saving comment:', error);
+            }
+        }
+
+        async function saveReply(commentId, reply) {
+            try {
+                const response = await fetch(`/api/post/${currentPostId}/comments/${commentId}/replies`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: reply.content,
+                        author: reply.author,
+                        avatar: reply.avatar
+                    })
+                });
+                
+                if (!response.ok) {
+                    console.warn('Reply not saved to backend');
+                }
+            } catch (error) {
+                console.error('Error saving reply:', error);
+            }
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        // Initialize
+        loadData();
+    </script>
+</body>
+</html>
