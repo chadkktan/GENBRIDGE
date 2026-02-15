@@ -1,0 +1,50 @@
+<div class="card">
+    <h2>Account Actions</h2>
+
+    <div class="settings-row">
+        <div class="settings-left">
+            <div class="settings-icon">⬇️</div>
+            <div class="settings-text">
+                <strong>Export Your Data</strong>
+                <span>Download a copy of your account data</span>
+            </div>
+        </div>
+        <button class="btn btn-black" type="button" >Export</button>
+    </div>
+
+    <div class="settings-row">
+        <div class="settings-left">
+            <div class="settings-icon">🚪</div>
+            <div class="settings-text">
+                <strong>Sign Out All Devices</strong>
+                <span>Sign out from all active sessions</span>
+            </div>
+        </div>
+        <button class="btn btn-black" type="button" onclick="openModal('signOutModal')">Sign Out</button>
+    </div>
+
+    <div class="settings-row">
+        <div class="settings-left">
+            <div class="settings-icon">🔄</div>
+            <div class="settings-text">
+                <strong>Start Over</strong>
+                <span>Clear your profile and create it again</span>
+            </div>
+        </div>
+
+        <button class="btn btn-outline" type="button" onclick="openModal('startOverModal')">
+            Start Over
+        </button>
+    </div>
+
+    <div class="settings-row" style="border: 1px solid #e53935; background: #fff3f3;">
+        <div class="settings-left">
+            <div class="settings-icon">🗑️</div>
+            <div class="settings-text">
+                <strong style="color: #e53935;">Delete Account</strong>
+                <span>Permanently delete your account and data</span>
+            </div>
+        </div>
+        <button class="btn btn-danger" type="button" onclick="openModal('deleteModal')">Delete</button>
+    </div>
+</div>

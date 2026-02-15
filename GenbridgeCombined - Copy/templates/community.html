@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Community Chat</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='community.css') }}">
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <button class="back-btn" onclick="goBack()">
+          <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Back
+        </button>
+        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.3);"></div>
+        <h1 class="header-title" id="communityName">Loading...</h1>
+      </div>
+
+      <div class="user-avatar">
+        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+    <div id="loadingIndicator" class="loading">Loading community...</div>
+    <div id="errorIndicator" class="loading hidden" style="color: #dc2626;">Error loading. Please try again.</div>
+
+    <!-- Community Card -->
+    <div class="post-card hidden" id="communityCard">
+      <div class="post-content">
+        <div class="post-author">
+          <div class="author-avatar" id="communityAvatar"></div>
+          <div class="author-info">
+            <div class="author-name">
+              <span class="community-name" id="communityCategory"></span>
+              <span class="post-time" id="communityMeta"></span>
+            </div>
+            <div class="posted-by" id="communityCreatedBy"></div>
+          </div>
+        </div>
+
+        <h1 class="post-title" id="communityTitle"></h1>
+        <div class="post-body" id="communityDescription"></div>
+
+        <div class="action-bar">
+          <button class="action-btn" type="button">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <span id="chatCount"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Card -->
+    <div class="comments-card hidden" id="chatCard">
+      <div class="comments-header">
+        <h2 class="comments-title">Chat (<span id="chatCountHeader">0</span>)</h2>
+      </div>
+
+      <!-- Message Input -->
+      <div class="comment-input-section">
+        <div class="comment-input-wrapper">
+          <div class="input-avatar">
+            <svg class="icon-sm" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          </div>
+
+          <div style="flex: 1;">
+            <textarea id="mainMessageInput" class="comment-input" placeholder="Send a message..."></textarea>
+            <div class="input-actions">
+              <button class="cancel-btn" type="button" onclick="clearMainMessage()">Cancel</button>
+              <button class="submit-btn" type="button" onclick="submitMessage()">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat List / Empty State -->
+      <div id="chatList"></div>
+
+      <div id="emptyChat" class="empty-comments hidden">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
+             style="width: 80px; height: 80px; margin: 0 auto 20px; opacity: 0.3;">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <h3 style="font-size: 20px; margin-bottom: 10px; color: #6b7280;">No messages yet</h3>
+        <p style="font-size: 14px; color: #9ca3af;">Start the conversation.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentCommunityId = null;
+    let community = null;
+    let chats = [];
+    let isSending = false;
+
+    // Get community_id from URL parameters
+    function getCommunityId() {
+      const url = new URL(window.location.href);
+
+      // 1) query string: ?community_id=3 or ?id=3
+      const qp = url.searchParams.get('community_id') || url.searchParams.get('id');
+      if (qp) return qp;
+
+      // 2) path: /community_discussion/3
+      const parts = url.pathname.split('/').filter(Boolean);
+      const last = parts[parts.length - 1];
+      if (last && /^\d+$/.test(last)) return last;
+
+      return null;
+    }
+    function getInitials(name) {
+      if (!name) return '?';
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+    }
+
+    // Load community + chats from API
+    async function loadData() {
+      try {
+        currentCommunityId = getCommunityId();
+        if (!currentCommunityId) throw new Error('No community ID provided');
+
+        // 1) Fetch community details
+        const communityRes = await fetch(`/api/community/${currentCommunityId}`);
+        if (!communityRes.ok) throw new Error('Community not found');
+        community = await communityRes.json();
+
+        // Optional: if your API returns {community: {...}} handle it
+        if (community.community) community = community.community;
+
+        // 2) Fetch chats
+        const chatsRes = await fetch(`/api/community/${currentCommunityId}/chats`);
+        if (!chatsRes.ok) throw new Error('Could not load chats');
+        const chatsData = await chatsRes.json();
+
+        // Optional: if API returns {chats:[...]} handle it
+        chats = chatsData.chats ? chatsData.chats : chatsData;
+
+        displayCommunity();
+        renderChats();
+
+        document.getElementById('loadingIndicator').classList.add('hidden');
+        document.getElementById('communityCard').classList.remove('hidden');
+        document.getElementById('chatCard').classList.remove('hidden');
+
+      } catch (error) {
+        console.error('Error loading data:', error);
+        document.getElementById('loadingIndicator').classList.add('hidden');
+        const err = document.getElementById('errorIndicator');
+        err.classList.remove('hidden');
+        err.textContent = `Error: ${error.message}`;
+      }
+    }
+
+    function displayCommunity() {
+      // If you store a color in community, use it, else default
+      const headerColor = community.color || '#dc2626';
+      document.querySelector('.header').style.background = headerColor;
+      document.querySelector('.submit-btn').style.background = headerColor;
+
+      const name = community.name || 'Community';
+      document.getElementById('communityName').textContent = name;
+      document.getElementById('communityTitle').textContent = name;
+
+      document.getElementById('communityAvatar').textContent = getInitials(name);
+      document.getElementById('communityCategory').textContent = community.category ? `${community.category}` : 'General';
+
+      const members = (community.members ?? 0);
+      const createdAt = community.created_at ? `• ${community.created_at}` : '';
+      document.getElementById('communityMeta').textContent = `• ${members} member${members === 1 ? '' : 's'} ${createdAt}`;
+
+      const createdBy = community.created_by_email ? `Created by ${community.created_by_email}` : '';
+      document.getElementById('communityCreatedBy').textContent = createdBy;
+
+      document.getElementById('communityDescription').textContent = community.description || '';
+      updateChatCount();
+    }
+
+    function updateChatCount() {
+      const total = chats.length;
+      document.getElementById('chatCount').textContent = `${total} Message${total !== 1 ? 's' : ''}`;
+      document.getElementById('chatCountHeader').textContent = total;
+    }
+
+    function renderChats() {
+      const chatList = document.getElementById('chatList');
+      const emptyState = document.getElementById('emptyChat');
+
+      if (!chats || chats.length === 0) {
+        chatList.innerHTML = '';
+        chatList.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        emptyState.style.textAlign = 'center';
+        emptyState.style.padding = '60px 20px';
+        emptyState.style.color = '#9ca3af';
+      } else {
+        chatList.innerHTML = '';
+        chatList.classList.remove('hidden');
+        emptyState.classList.add('hidden');
+
+        chats.forEach(msg => {
+          chatList.appendChild(createChatElement(msg));
+        });
+
+        // scroll to bottom
+        setTimeout(() => {
+          chatList.scrollTop = chatList.scrollHeight;
+        }, 0);
+      }
+
+      updateChatCount();
+    }
+
+    function createChatElement(msg) {
+      // Expecting msg shape from DB:
+      // { id, community_id, email, message, created_at }
+      const div = document.createElement('div');
+      div.className = 'comment'; // reuse your existing comment styles
+
+      const author = msg.email || 'Anonymous';
+      const avatar = getInitials(author);
+      const time = msg.created_at ? msg.created_at : 'just now';
+      const body = msg.message || '';
+
+      div.innerHTML = `
+        <div class="comment-wrapper">
+          <div class="comment-avatar">${avatar}</div>
+          <div class="comment-content">
+            <div class="comment-header">
+              <span class="comment-author">${author}</span>
+              <span class="comment-time">• ${time}</span>
+            </div>
+            <div class="comment-body">${escapeHtml(body)}</div>
+          </div>
+        </div>
+      `;
+
+      return div;
+    }
+
+    // Prevent HTML injection in chat messages
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function clearMainMessage() {
+      document.getElementById('mainMessageInput').value = '';
+    }
+
+    async function submitMessage() {
+      if (isSending) return;
+
+      const input = document.getElementById('mainMessageInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      isSending = true;
+
+      // optimistic UI add (so it feels instant)
+      const optimistic = {
+        id: `tmp-${Date.now()}`,
+        community_id: currentCommunityId,
+        email: 'You',
+        message,
+        created_at: 'just now'
+      };
+      chats.push(optimistic);
+      renderChats();
+      input.value = '';
+
+      try {
+        const res = await fetch(`/api/community/${currentCommunityId}/chats`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        if (!res.ok) throw new Error('Message not saved');
+
+        // If backend returns the saved row, replace optimistic
+        const saved = await res.json().catch(() => null);
+        if (saved) {
+          // remove optimistic and append saved
+          chats = chats.filter(x => x.id !== optimistic.id);
+          chats.push(saved.chat ? saved.chat : saved);
+          renderChats();
+        } else {
+          // fallback: reload list
+          await reloadChats();
+        }
+
+      } catch (err) {
+        console.error(err);
+        // rollback optimistic if save failed
+        chats = chats.filter(x => x.id !== optimistic.id);
+        renderChats();
+        alert('Failed to send message. Try again.');
+      } finally {
+        isSending = false;
+      }
+    }
+
+    async function reloadChats() {
+      const chatsRes = await fetch(`/api/community/${currentCommunityId}/chats`);
+      if (!chatsRes.ok) return;
+      const chatsData = await chatsRes.json();
+      chats = chatsData.chats ? chatsData.chats : chatsData;
+      renderChats();
+    }
+
+    function goBack() {
+      window.history.back();
+    }
+
+    // Initialize
+    loadData();
+  </script>
+</body>
+</html>

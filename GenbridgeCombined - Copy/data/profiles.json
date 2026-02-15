@@ -1,0 +1,115 @@
+{
+  "250377y@mail.com": {
+    "first_name": "Justin",
+    "last_name": "Ferrer",
+    "email": "250377y@mail.com",
+    "phone": "98009000",
+    "dob": "2006-05-22",
+    "location": "Singapore, East",
+    "website": "-",
+    "bio": "My Bio Here",
+    "role": "Young Person",
+    "interests": [
+      "Cooking",
+      "Gardening",
+      "Sports"
+    ],
+    "avatar_filename": null
+  },
+  "guanhee@gmail.com": {
+    "avatar_filename": null,
+    "bio": "My bio",
+    "dob": "2010-02-01",
+    "email": "guanhee@gmail.com",
+    "first_name": "Guan",
+    "interests": [
+      "Cooking",
+      "Movies",
+      "Crafts"
+    ],
+    "last_name": "Hee",
+    "location": "Singapore, West",
+    "phone": "91000000",
+    "role": "Young Person",
+    "website": "-"
+  },
+  "onjad.lim.1472@gmail.com": {
+    "avatar_filename": null,
+    "bio": "TESTING AHHHHHHHHHHHHH",
+    "dob": "2010-02-01",
+    "email": "onjad.lim.1472@gmail.com",
+    "first_name": "Jadon",
+    "interests": [
+      "Cooking",
+      "Music",
+      "Technology",
+      "Photography",
+      "Crafts",
+      "Travel",
+      "Art",
+      "Gardening",
+      "Reading",
+      "History",
+      "Sports",
+      "Movies"
+    ],
+    "last_name": "Lim",
+    "location": "singapore",
+    "phone": "92471472",
+    "role": "Young Person",
+    "website": "-"
+  },
+  "888hater@hotno.com": {
+    "first_name": "Jadon",
+    "last_name": "asf",
+    "email": "888hater@hotno.com",
+    "phone": "12345678",
+    "dob": "2010-02-02",
+    "location": "singapore",
+    "website": "-",
+    "bio": "edarhbstrhstrjhnysthgf",
+    "role": "Young Person",
+    "interests": [
+      "Cooking",
+      "Technology",
+      "Art"
+    ],
+    "avatar_filename": null
+  },
+  "name@gmail.com": {
+    "first_name": "Ridzwan",
+    "last_name": "Name",
+    "email": "name@gmail.com",
+    "phone": "+6591129997",
+    "dob": "2009-11-03",
+    "location": "Singapore, West",
+    "website": "-",
+    "bio": "My Bio",
+    "role": "Young Person",
+    "interests": [
+      "Gardening",
+      "Reading",
+      "Sports",
+      "Travel"
+    ],
+    "avatar_filename": null
+  },
+  "name1@gmail.com": {
+    "first_name": "John",
+    "last_name": "Name",
+    "email": "name1@gmail.com",
+    "phone": "12345678",
+    "dob": "2010-02-09",
+    "location": "123",
+    "website": "-",
+    "bio": "",
+    "role": "Young Person",
+    "interests": [
+      "Cooking",
+      "Sports",
+      "Photography",
+      "Technology"
+    ],
+    "avatar_filename": null
+  }
+}

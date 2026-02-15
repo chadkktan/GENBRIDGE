@@ -1,0 +1,87 @@
+<nav class="navbar navbar-expand-lg genbridge-navbar">
+  <div class="container">
+    
+<a class="navbar-brand genbridge-brand-wrap" href="{{ url_for('home') }}">
+  <img src="{{ url_for('static', filename='GenBridge.png') }}"
+       class="genbridge-logo-only"
+       alt="Genbridge Logo">
+
+  <span class="genbridge-wordmark">GenBridge</span>
+</a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+<div class="collapse navbar-collapse" id="mainNav">
+  <div class="ms-auto d-flex align-items-center gap-3">
+
+    <ul class="navbar-nav genbridge-navlinks-right align-items-lg-center">
+
+      <!-- Events (placeholder for now) -->
+    <!-- Events & Activities -->
+<li class="nav-item dropdown d-flex align-items-center">
+  <!-- Text = go to Activities/Events page -->
+  <a class="nav-link genbridge-toplink pe-1" href="{{ url_for('events') }}">
+    Events &amp; Activities
+  </a>
+
+  <!-- Arrow = open dropdown -->
+  <a class="nav-link dropdown-toggle dropdown-toggle-split genbridge-toplink ps-0"
+     href="#"
+     role="button"
+     data-bs-toggle="dropdown"
+     aria-expanded="false">
+    <span class="visually-hidden">Toggle Dropdown</span>
+  </a>
+
+  <ul class="dropdown-menu">
+    <li><a class="dropdown-item" href="{{ url_for('events') }}">Upcoming Events</a></li>
+    <li><a class="dropdown-item" href="{{ url_for('bookings') }}">My Booking</a></li>
+  </ul>
+</li>
+
+      <!-- ✅ Stories -->
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle genbridge-toplink"
+           href="{{ url_for('stories') }}"
+           role="button"
+           data-bs-toggle="dropdown">
+          Stories
+        </a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="{{ url_for('stories') }}">All Stories</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('post_creation') }}">Create Story</a></li>
+        </ul>
+      </li>
+
+      <!-- ✅ Communities -->
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle genbridge-toplink"
+           href="{{ url_for('home') }}"
+           role="button"
+           data-bs-toggle="dropdown">
+          Communities
+        </a>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="{{ url_for('home') }}">All Communities</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('messages') }}">Private Messages</a></li>
+        </ul>
+      </li>
+
+    </ul>
+
+    <!-- My Booking placeholder -->
+    <a class="btn genbridge-mybooking-btn" href="{{ url_for('bookings') }}">My Booking</a>
+
+
+    <!-- Profile -->
+    <a class="btn genbridge-login-btn" href="{{ url_for('profile') }}">
+      View Profile
+    </a>
+
+  </div>
+</div>
+
+  </div>
+</nav>
